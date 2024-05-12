@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <title>Horizop</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="index.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <div class="sidebar">
+        <img
+          class="img"
+          src="../horizop.jpg"
+          width="80"
+          height="80"
+          style="position: relative; margin-left: 40px"
+        />
+
+        <h2>EVCS</h2>
+
+        <ul>
+          <li>
+            <a href="../profilee.html"><i class="fa fa-money"></i> Profile</a>
+          </li>
+
+          <li>
+            <a href="#"><i class="fa fa-bar-chart"></i> Overview</a>
+          </li>
+          <li>
+            <a href="cars.html"><i class="fa fa-bar-chart"></i> Cars</a>
+          </li>
+
+          <li>
+            <a href="Chargers.html" class="chargers"
+              ><img
+                src="../cs.png"
+                style="width: 20px; position: relative; top: 3px"
+              />
+              Stations</a
+            >
+          </li>
+          <li>
+            <a href="sessions.html"><i class="fa fa-money"></i> Sessions</a>
+          </li>
+          <li>
+            <a href="clients.html"><i class="fa fa-credit-card"></i> Clients</a>
+          </li>
+          <li>
+            <a href="../map.html"><i class="fa fa-money"></i> Map</a>
+          </li>
+          <li>
+            <a href="admin.html"><i class="fa fa-bar-chart"></i> Admins</a>
+          </li>
+          <li>
+            <a href="company.html"><i class="fa fa-bar-chart"></i> Companies</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="main_content">
+        <div class="header" style="padding-top: 50px; padding-bottom: 1px">
+          Overview
+          <form action="http://localhost:3000/logout" method="POST">
+            <button
+              class="row button"
+              type="submit"
+              onclick="logout()"
+              style="padding-bottom: 30px"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
+
+        <div class="info">
+          <div class="container">
+            <section id="section1">
+              <h4>Fees Collected</h4>
+              <canvas id="myChart"></canvas>
+            </section>
+
+            <section id="section2">
+              <h4>Energy Consumed</h4>
+              <canvas id="Energy"></canvas>
+            </section>
+
+            <section id="section3">
+              <h4>Availability</h4>
+              <canvas id="Availability"></canvas>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      /** cost */
+      const costByDay = new Map();
+
+      fetch("/cost")
+        .then((response) => response.json())
+        .then((data) => {
+          data.sort((a, b) => new Date(a.Start_time) - new Date(b.Start_time));
+
+          data.forEach((item) => {
+            const dateString = item.Start_time.split("@")[0].trim();
+            const cost = item.Cost;
+
+            const dateParts = dateString.split("/");
+            const date = new Date(
+              Date.UTC(dateParts[2], dateParts[1] - 1, dateParts[0])
+            );
+            console.log("dateParts[2]", dateParts[2]);
+            console.log("dateParts[1] - 1", dateParts[1]);
+            console.log("dateParts[0]", dateParts[0]);
+
+            const dayKey = date.toISOString().split("T")[0];
+            console.log("dayKey", dayKey);
+
+            if (costByDay.has(dayKey)) {
+              costByDay.set(dayKey, costByDay.get(dayKey) + cost);
+            } else {
+              costByDay.set(dayKey, cost);
+            }
+          });
+
+          const xValues = Array.from(costByDay.keys()).sort(
+            (a, b) => new Date(a) - new Date(b)
+          );
+          const yValues = Array.from(costByDay.values());
+
+          console.log("dates", xValues);
+          console.log("costs", yValues);
+
+          var myChart = new Chart("myChart", {
+            type: "line",
+            data: {
+              labels: xValues,
+              datasets: [
+                {
+                  label: "Fees Collected Per Day",
+                  data: xValues.map((day) => costByDay.get(day)),
+                },
+              ],
+            },
+            options: {
+              scales: {
+                x: {
+                  type: "time",
+                  time: {
+                    unit: "day",
+                  },
+                },
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        })
+        .catch((error) => console.error("Error:", error));
+
+      /** energy */
+      const energyByDay = new Map();
+
+      fetch("/energy")
+        .then((response) => response.json())
+        .then((data) => {
+          data.sort((a, b) => new Date(a.Start_time) - new Date(b.Start_time));
+
+          data.forEach((item) => {
+            const dateString = item.Start_time.split("@")[0].trim();
+            const energy = item.energy_consumed;
+
+            const dateParts = dateString.split("/");
+            const date = new Date(
+              Date.UTC(dateParts[2], dateParts[1] - 1, dateParts[0])
+            );
+            console.log("dateParts[2]", dateParts[2]);
+            console.log("dateParts[1] - 1", dateParts[1]);
+            console.log("dateParts[0]", dateParts[0]);
+
+            const dayKey = date.toISOString().split("T")[0];
+            console.log("dayKey", dayKey);
+
+            if (energyByDay.has(dayKey)) {
+              energyByDay.set(dayKey, energyByDay.get(dayKey) + energy);
+            } else {
+              energyByDay.set(dayKey, energy);
+            }
+          });
+
+          const xValues = Array.from(energyByDay.keys()).sort(
+            (a, b) => new Date(a) - new Date(b)
+          );
+          const yValues = Array.from(energyByDay.values());
+
+          console.log("dates", xValues);
+          console.log("energy", yValues);
+
+          var energy = new Chart("Energy", {
+            type: "line",
+            data: {
+              labels: xValues,
+              datasets: [
+                {
+                  label: "Energy Consumed Per Day",
+                  data: xValues.map((day) => energyByDay.get(day)),
+                },
+              ],
+            },
+            options: {
+              scales: {
+                x: {
+                  type: "time",
+                  time: {
+                    unit: "day",
+                  },
+                },
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        })
+        .catch((error) => console.error("Error:", error));
+
+      /** availability */
+      const availabilityMap = new Map();
+
+      fetch("/availability")
+        .then((response) => response.json())
+        .then((data) => {
+          data.forEach((item) => {
+            const availability = item.availability;
+            if (availabilityMap.has(availability)) {
+              availabilityMap.set(
+                availability,
+                availabilityMap.get(availability) + 1
+              );
+            } else {
+              availabilityMap.set(availability, 1);
+            }
+          });
+
+          const labels = Array.from(availabilityMap.keys());
+          const values = Array.from(availabilityMap.values());
+
+          var availabilityChart = new Chart("Availability", {
+            type: "pie",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Availability",
+                  data: values,
+                },
+              ],
+            },
+            options: {},
+          });
+        })
+        .catch((error) => console.error("Error:", error));
+
+      function logout() {
+        document.getElementsByTagName("title")[0].innerHTML = "login.html";
+        window.history.pushState({}, "login.html", "/login.html");
+        window.onpopstate = function () {
+          window.history.go(1);
+        };
+
+        window.location.replace("/login.html");
+      }
+    </script>
+  </body>
+</html>

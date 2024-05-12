@@ -1,0 +1,16 @@
+.container {
+    display: flex; /* Use flexbox to align items */
+    flex-wrap: wrap; /* Allow items to wrap to the next line */
+    justify-content: space-between; /* Space items evenly */
+
+}
+
+section {
+    width: 48%; /* Set the width of each section */
+    padding: 20px;
+    margin: 10px;
+    background-color: #ffffff;
+    border: 1px solid #ffffff;
+    box-sizing: border-box; /* Include padding and border in the width calculation */
+    
+}

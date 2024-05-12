@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>MAPS</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <meta charset="UTF-8" />
+    <title>Horizop</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="sidebar">
+        <img
+          class="img"
+          src="horizop.jpg"
+          width="80"
+          height="80"
+          style="position: relative; margin-left: 40px"
+        />
+
+        <h2>EVCS</h2>
+
+        <ul class="navbar-nav" id="adminMenu">
+          <li>
+            <a href="../profilee.html"><i class="fa fa-money"></i> Profile</a>
+          </li>
+
+          <li>
+            <a href="./admin/chart.html"
+              ><i class="fa fa-bar-chart"></i> Overview</a
+            >
+          </li>
+          <li>
+            <a href="./admin/cars.html"><i class="fa fa-bar-chart"></i> Cars</a>
+          </li>
+
+          <li>
+            <a href="./admin/Chargers.html" class="chargers"
+              ><img
+                src="../cs.png"
+                style="width: 20px; position: relative; top: 3px"
+              />
+              Stations</a
+            >
+          </li>
+          <li>
+            <a href="./admin/sessions.html"
+              ><i class="fa fa-money"></i> Sessions</a
+            >
+          </li>
+          <li>
+            <a href="./admin/clients.html"
+              ><i class="fa fa-credit-card"></i> Clients</a
+            >
+          </li>
+          <li>
+            <a href="map.html"><i class="fa fa-money"></i> Map</a>
+          </li>
+          <li>
+            <a href="./admin/admin.html"
+              ><i class="fa fa-bar-chart"></i> Admins</a
+            >
+          </li>
+          <li>
+            <a href="./admin/company.html"
+              ><i class="fa fa-bar-chart"></i> Companies</a
+            >
+          </li>
+        </ul>
+
+        <!-- Client menu -->
+        <ul id="clientMenu" style="display: none">
+          <li>
+            <a href="profilee.html"><i class="fa fa-money"></i> Profile</a>
+          </li>
+          <li>
+            <a href="map.html"><i class="fa fa-money"></i> Map</a>
+          </li>
+          <li>
+            <a href="./client/client_stations.html" class="chargers"
+              ><img
+                src="../cs.png"
+                style="width: 20px; position: relative; top: 3px"
+              />
+              Chargers</a
+            >
+          </li>
+
+          <li>
+            <a href="./client/client_session.html"
+              ><i class="fa fa-money"></i> Sessions</a
+            >
+          </li>
+          <li>
+            <a href="./client/recharge.html"
+              ><i class="fa fa-money"></i> Recharge Account</a
+            >
+          </li>
+        </ul>
+      </div>
+      <div class="main_content">
+        <div class="header" style="padding-top: 50px; padding-bottom: 1px">
+          Map
+          <form action="http://localhost:3000/logout" method="POST">
+            <button
+              class="row button"
+              type="submit"
+              onclick="logout()"
+              style="padding-bottom: 30px"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
+        <div class="info">
+          <label for="availabilityFilter">Filter by Availability:</label>
+          <select id="availabilityFilter">
+            <option value="all">All</option>
+            <option value="Available">Available</option>
+            <option value="Unavailable">Unavailable</option>
+            <option value="AC Level 1">AC Level 1</option>
+            <option value="AC Level 2">AC Level 2</option>
+            <option value="DC ">DC</option>
+          </select>
+
+          <div id="map"></div>
+
+          <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+          <script>
+            var map = L.map("map").setView([36.835007, 10.19583], 5);
+            var greenIcon = new L.Icon({
+              iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+              shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41],
+            });
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+              maxZoom: 19,
+            }).addTo(map);
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const { latitude, longitude } = position.coords;
+
+                map.setView([latitude, longitude], 12);
+
+                L.marker([latitude, longitude])
+                  .addTo(map)
+                  .bindPopup("Your Location")
+                  .openPopup();
+
+                fetch("/pins")
+                  .then((response) => response.json())
+                  .then((data) => {
+                    const markers = [];
+
+                    data.forEach((pin) => {
+                      let iconUrl = "";
+                      if (pin.availability === "Available") {
+                        iconUrl =
+                          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png";
+                      } else if (pin.availability === "Unavailable") {
+                        iconUrl =
+                          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png";
+                      } else if (pin.availability === "out of service") {
+                        iconUrl = "pin.png";
+                      }
+
+                      const customIcon = new L.Icon({
+                        iconUrl: iconUrl,
+                        iconSize: [30, 40],
+                        iconAnchor: [15, 40],
+                        popupAnchor: [0, -40],
+                      });
+
+                      const marker = L.marker([pin.lat, pin.lng], {
+                        icon: customIcon,
+                      });
+                      marker.addTo(map);
+                      marker.on("click", function () {
+                        fetch(`/pin-details?lat=${pin.lat}&lng=${pin.lng}`)
+                          .then((response) => response.json())
+                          .then((data) => {
+                            const {
+                              Station_name,
+                              charging_rate,
+                              charging_type,
+                              power_rating,
+                              availability,
+                            } = data;
+                            marker
+                              .bindPopup(
+                                `<b>Pin Details</b><br>Name: ${Station_name}<br>Charging Rate: ${charging_rate}<br>Charging Type: ${charging_type}<br>${power_rating} Per hour <br>${availability}`
+                              )
+                              .openPopup();
+                            map.setView([pin.lat, pin.lng], 40);
+                          })
+                          .catch((error) => {
+                            console.error(error);
+                          });
+                      });
+
+                      markers.push({ marker, pin });
+                    });
+
+                    document
+                      .getElementById("availabilityFilter")
+                      .addEventListener("change", function () {
+                        const filterValue = this.value;
+                        markers.forEach(({ marker, pin }) => {
+                          console.log("pin.availability", pin.availability);
+                          console.log("pin.charging_type", pin.charging_type);
+
+                          if (
+                            filterValue === "all" ||
+                            filterValue === pin.availability ||
+                            (filterValue === "AC Level 1" &&
+                              pin.charging_type === "AC Level 1") ||
+                            (filterValue === "AC Level 2" &&
+                              pin.charging_type === "AC Level 2") ||
+                            (filterValue === "DC " &&
+                              pin.charging_type === "DC ")
+                          ) {
+                            map.addLayer(marker);
+                          } else {
+                            map.removeLayer(marker);
+                          }
+                        });
+                      });
+                  })
+                  .catch((error) => {
+                    console.error(error);
+                  });
+              },
+              (error) => {
+                console.error(error);
+              }
+            );
+
+            document.addEventListener("DOMContentLoaded", function () {
+              fetch("/user-role")
+                .then((response) => response.text())
+                .then((role) => {
+                  if (role === "super_admin") {
+                    document.getElementById("adminMenu").style.display =
+                      "block";
+
+                    document.getElementById("car").style.display = "none";
+                  } else {
+                    document.getElementById("clientMenu").style.display =
+                      "block";
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error:", error);
+                });
+            });
+
+            map.on("click", onMarkerClick);
+
+            function logout() {
+              document.getElementsByTagName("title")[0].innerHTML =
+                "login.html";
+              window.history.pushState({}, "login.html", "/login.html");
+              window.onpopstate = function () {
+                window.history.go(1);
+              };
+
+              window.location.replace("/login.html");
+            }
+          </script>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

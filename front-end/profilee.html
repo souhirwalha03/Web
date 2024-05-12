@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <title>Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/fontawesome.min.css"
+      integrity="sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7"
+      crossorigin="anonymous"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="sidebar">
+        <img
+          class="img"
+          src="horizop.jpg"
+          width="80"
+          height="80"
+          style="position: relative; margin-left: 40px"
+        />
+
+        <h2>EVCS</h2>
+        <!-- Admin menu -->
+
+        <ul class="navbar-nav" id="adminMenu">
+          <li>
+            <a href="profilee.html"><i class="fa fa-money"></i> Profile</a>
+          </li>
+
+          <li>
+            <a href="./admin/chart.html"
+              ><i class="fa fa-bar-chart"></i> Overview</a
+            >
+          </li>
+          <li>
+            <a href="./admin/cars.html"><i class="fa fa-bar-chart"></i> Cars</a>
+          </li>
+
+          <li>
+            <a href="./admin/Chargers.html" class="chargers"
+              ><img
+                src="../cs.png"
+                style="width: 20px; position: relative; top: 3px"
+              />
+              Stations</a
+            >
+          </li>
+          <li>
+            <a href="./admin/sessions.html"
+              ><i class="fa fa-money"></i> Sessions</a
+            >
+          </li>
+          <li>
+            <a href="./admin/clients.html"
+              ><i class="fa fa-credit-card"></i> Clients</a
+            >
+          </li>
+          <li>
+            <a href="map.html"><i class="fa fa-money"></i> Map</a>
+          </li>
+          <li>
+            <a href="./admin/admin.html"
+              ><i class="fa fa-bar-chart"></i> Admins</a
+            >
+          </li>
+          <li>
+            <a href="./admin/company.html"
+              ><i class="fa fa-bar-chart"></i> Companies</a
+            >
+          </li>
+        </ul>
+
+        <!-- Client menu -->
+        <ul id="clientMenu">
+          <li>
+            <a href="profilee.html"><i class="fa fa-money"></i> Profile</a>
+          </li>
+          <li>
+            <a href="map.html"><i class="fa fa-money"></i> Map</a>
+          </li>
+          <li>
+            <a href="./client/client_stations.html" class="chargers"
+              ><img
+                src="../cs.png"
+                style="width: 20px; position: relative; top: 3px"
+              />
+              Chargers</a
+            >
+          </li>
+
+          <li>
+            <a href="./client/client_session.html"
+              ><i class="fa fa-money"></i> Sessions</a
+            >
+          </li>
+          <li>
+            <a href="./client/recharge.html"
+              ><i class="fa fa-money"></i> Recharge Account</a
+            >
+          </li>
+        </ul>
+      </div>
+      <div class="main_content">
+        <div class="header" style="padding-top: 50px; padding-bottom: 1px">
+          Profile
+          <form action="http://localhost:3000/logout" method="POST">
+            <button
+              class="row button"
+              type="submit"
+              onclick="logout()"
+              style="padding-bottom: 30px"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
+        <div class="info">
+          <div class="container">
+            <div class="main-body">
+              <div class="col-md-8">
+                <div class="card mb-3">
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-sm-3">
+                        <h6 class="mb-0">Full Name</h6>
+                      </div>
+
+                      <div class="col-sm-9 text-secondary" id="fullName"></div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                      <div class="col-sm-3">
+                        <h6 class="mb-0">Email</h6>
+                      </div>
+
+                      <div class="col-sm-9 text-secondary" id="email"></div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                      <div class="col-sm-3">
+                        <h6 class="mb-0">Phone</h6>
+                      </div>
+
+                      <div class="col-sm-9 text-secondary" id="phone"></div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                      <div class="col-sm-3">
+                        <h6 class="mb-0">RFID tag id</h6>
+                      </div>
+
+                      <div
+                        class="col-sm-9 text-secondary"
+                        id="RFID_tag_ID"
+                      ></div>
+                    </div>
+                    <hr id="hr_RFID_tag_ID" />
+                    <div class="row">
+                      <div class="col-sm-3">
+                        <h6 class="mb-0">Address</h6>
+                      </div>
+                      <div class="col-sm-9 text-secondary" id="address"></div>
+                      <hr />
+                    </div>
+
+                    <div class="row">
+                      <div class="col-sm-12">
+                        <a
+                          class="btn btn-custom"
+                          onclick="edit()"
+                          target="__blank"
+                          >Edit</a
+                        >
+                        <a
+                          id="car"
+                          class="btn btn-custom"
+                          onclick="add_car()"
+                          target="__blank"
+                          >Cars</a
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- The Modal -->
+      <div id="myModal" class="modal1">
+        <!-- Modal content -->
+        <div class="modal1-content">
+          <span class="close">&times;</span>
+          <h2 style="padding-bottom: 20px">Edit Profile Settings</h2>
+          <form
+            id="stationForm"
+            action="http://localhost:3000/edit_profile"
+            method="POST"
+          >
+            <label for="Name">Name:</label><br />
+
+            <div class="input-group mb-3">
+              <input
+                class="form-control"
+                id="Name"
+                name="Name"
+                placeholder="Username"
+                value=""
+              />
+            </div>
+            <label for="Name">Email:</label><br />
+
+            <div class="input-group mb-3">
+              <input
+                class="form-control"
+                id="Email"
+                name="Email"
+                placeholder="Username"
+                value=""
+              />
+            </div>
+            <label for="Name">Password:</label><br />
+
+            <div class="input-group mb-3">
+              <input
+                class="form-control"
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Password"
+                value=""
+              />
+              <span class="input-group-text">
+                <i
+                  class="fa fa-eye"
+                  id="togglePassword"
+                  style="cursor: pointer"
+                ></i>
+              </span>
+            </div>
+
+            <label for="Address">Address:</label><br />
+            <div class="input-group mb-3">
+              <input
+                class="form-control"
+                id="Address"
+                name="Address"
+                placeholder="Username"
+                value=""
+              />
+            </div>
+            <label for="Phone">Phone:</label><br />
+            <div class="input-group mb-3">
+              <input
+                class="form-control"
+                id="Phone"
+                name="Phone"
+                placeholder="Username"
+                value=""
+              />
+            </div>
+
+            <button class="SUBMIT" type="submit">Submit</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- The Modal -->
+      <div id="carModal" class="modal1">
+        <!-- Modal content -->
+        <div class="modal1-content">
+          <span class="close">&times;</span>
+          <h2 style="padding-bottom: 20px">Cars</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+
+                <th>Brand</th>
+                <th>Model</th>
+                <th>Battery</th>
+              </tr>
+            </thead>
+            <tbody id="sessionstable"></tbody>
+          </table>
+
+          <a id="car" class="btn btn-custom" onclick="addcar()" target="__blank"
+            >ADD Car</a
+          >
+        </div>
+      </div>
+
+      <div id="add_car" class="modal1">
+        <!-- Modal content -->
+        <div class="modal1-content">
+          <span class="close">&times;</span>
+          <h2 style="padding-bottom: 20px">Add Car</h2>
+          <form
+            id="addCarForm"
+            action="http://localhost:3000/add_car"
+            method="POST"
+          >
+            <label for="Brand">Brand:</label><br />
+            <input
+              class="form-control"
+              id="Brand"
+              name="Brand"
+              placeholder="Brand"
+              required
+            /><br />
+            <label for="Model">Model:</label><br />
+            <input
+              class="form-control"
+              id="Model"
+              name="Model"
+              placeholder="Model"
+              required
+            /><br />
+            <label for="Battery">Battery:</label><br />
+            <input
+              class="form-control"
+              id="Battery"
+              name="Battery"
+              placeholder="Battery"
+              required
+            /><br />
+
+            <button class="SUBMIT" type="submit">Add Car</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      fetch("/profilee")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Data received:", data);
+          $("#fullName").text(data.username);
+          $("#email").text(data.email);
+          $("#phone").text(data.phone_number);
+          $("#password").text(data.password);
+
+          if (data.role == "client") {
+            $("#RFID_tag_ID").text(data.RFID_tag_ID);
+          } else {
+            $("#RFID_tag_ID").closest(".row").hide();
+
+            $("#hr_RFID_tag_ID").hide();
+          }
+
+          $("#address").text(data.address);
+        })
+        .catch((error) => console.error("Error:", error));
+
+      function edit() {
+        var modal = document.getElementById("myModal");
+        modal.style.display = "block";
+      }
+
+      // Close the modal when the close button is clicked
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("close")) {
+          var modal = document.getElementById("myModal");
+          modal.style.display = "none";
+        }
+      });
+
+      // Function to close the modal when clicking outside of it
+      window.onclick = function (event) {
+        var modal = document.getElementById("myModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+      if (
+        window.location.href.includes(
+          "/profilee.html?message=Profile+updated+successfully"
+        )
+      ) {
+        alert("Profile updated successfully");
+      }
+
+      function edit() {
+        var fullName = $("#fullName").text().trim();
+        var email = $("#email").text().trim();
+        var phone = $("#phone").text().trim();
+        var address = $("#address").text().trim();
+        var password = $("#password").text().trim();
+
+        $("#Name").val(fullName);
+        $("#Email").val(email);
+        $("#Phone").val(phone);
+        $("#Address").val(address);
+
+        var modal = document.getElementById("myModal");
+        modal.style.display = "block";
+      }
+
+      function addcar() {
+        var modal = document.getElementById("add_car");
+        modal.style.display = "block";
+      }
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("close")) {
+          var modal = document.getElementById("add_car");
+          modal.style.display = "none";
+        }
+      });
+
+      // Function to close the modal when clicking outside of it
+      window.onclick = function (event) {
+        var modal = document.getElementById("add_car");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+      function add_car() {
+        var modal = document.getElementById("carModal");
+        modal.style.display = "block";
+
+        fetch("/client_cars")
+          .then((response) => response.json())
+          .then((data) => {
+            const tableBody = document.getElementById("sessionstable");
+            let counter = 1;
+            data.forEach((cars) => {
+              const row = document.createElement("tr");
+              row.setAttribute("data-model", cars.Model.toString());
+              row.innerHTML = `
+                    <td>${counter++}</td>
+                    <td>${cars.Battery}</td>
+                    <td>${cars.Brand}</td>
+                    <td>${cars.Model}</td>
+                    <td><button class="bnd" onclick="deletecar('${
+                      cars.Model
+                    }')">&times;</button></td>
+                `;
+              tableBody.appendChild(row);
+            });
+          });
+      }
+      // Close the modal when the close button is clicked
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("close")) {
+          var modal = document.getElementById("carModal");
+          modal.style.display = "none";
+        }
+      });
+
+      // Function to close the modal when clicking outside of it
+      window.onclick = function (event) {
+        var modal = document.getElementById("carModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+      $("#stationForm").submit(function (e) {
+        e.preventDefault();
+
+        var formData = {
+          Name: $("#Name").val(),
+          Email: $("#Email").val(),
+          Phone: $("#Phone").val(),
+          Address: $("#Address").val(),
+          password: $("#password").val(),
+        };
+
+        $.ajax({
+          type: "POST",
+          url: "http://localhost:3000/edit_profile",
+          data: formData,
+          success: function (response) {
+            window.location.href =
+              "/profilee.html?message=Profile+updated+successfully";
+          },
+          error: function (error) {
+            console.error("Error:", error);
+          },
+        });
+
+        var modal = document.getElementById("myModal");
+        modal.style.display = "none";
+      });
+      const togglePassword = document.querySelector("#togglePassword");
+      const password = document.querySelector("#password");
+
+      togglePassword.addEventListener("click", function () {
+        const type =
+          password.getAttribute("type") === "password" ? "text" : "password";
+        password.setAttribute("type", type);
+
+        this.classList.toggle("fa-eye");
+        this.classList.toggle("fa-eye-slash");
+      });
+      document.addEventListener("DOMContentLoaded", function () {
+        fetch("/user-role")
+          .then((response) => response.text())
+          .then((role) => {
+            if (role === "super_admin") {
+              document.getElementById("adminMenu").style.display = "block";
+
+              document.getElementById("car").style.display = "none";
+            } else {
+              document.getElementById("clientMenu").style.display = "block";
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      });
+
+      function deletecar(Model) {
+        fetch(`/car/${Model}`, {
+          method: "DELETE",
+        })
+          .then((response) => {
+            if (response.ok) {
+              const row = document.querySelector(`tr[data-model="${Model}"]`);
+              if (row) {
+                row.remove();
+              }
+            } else {
+              console.error("Failed to delete car:", response.statusText);
+            }
+          })
+          .catch((error) => console.error("Error deleting car:", error));
+      }
+    </script>
+  </body>
+</html>

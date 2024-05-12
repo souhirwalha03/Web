@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link rel="stylesheet" href="login.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="wrapper">
+        <div class="title"><span>Sign Up </span></div>
+        <form action="http://localhost:3000/register" method="POST">
+          <div class="row">
+            <label>Username<span class="req">*</span></label>
+            <input name="username" type="text" required />
+          </div>
+          <br />
+
+          <div class="row">
+            <label>Email<span class="req">*</span></label>
+            <input name="email" type="email" required />
+          </div>
+          <br />
+
+          <div class="row">
+            <label>Address<span class="req">*</span></label>
+            <input name="address" type="address" required />
+          </div>
+          <br />
+
+          <div class="row">
+            <label>Phone<span class="req">*</span></label>
+            <input name="phone_number" type="phone_number" required />
+          </div>
+          <br />
+
+          <div class="row">
+            <label>Password<span class="req">*</span></label>
+            <input name="password" type="password" required />
+          </div>
+          <br />
+
+          <div class="row button">
+            <input name="button" type="submit" value="Sign Up" />
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+  <script>
+    if (
+      window.location.href.includes("/signup.html?error=Client+already+exists")
+    ) {
+      alert("Client already exists");
+    }
+  </script>
+</html>

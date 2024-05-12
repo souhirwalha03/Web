@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <title>Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="sidebar">
+        <img
+          class="img"
+          src="../horizop.jpg"
+          width="80"
+          height="80"
+          style="position: relative; margin-left: 40px"
+        />
+
+        <h2>EVCS</h2>
+        <ul>
+          <li>
+            <a href="../profilee.html"><i class="fa fa-money"></i> Profile</a>
+          </li>
+          <li>
+            <a href="../map.html"><i class="fa fa-money"></i> Map</a>
+          </li>
+          <li>
+            <a href="client_stations.html" class="chargers"
+              ><img
+                src="../cs.png"
+                style="width: 20px; position: relative; top: 3px"
+              />
+              Chargers</a
+            >
+          </li>
+          <li>
+            <a href="client_session.html"
+              ><i class="fa fa-money"></i> Sessions</a
+            >
+          </li>
+          <li>
+            <a href="recharge.html"
+              ><i class="fa fa-money"></i> Recharge Account</a
+            >
+          </li>
+        </ul>
+      </div>
+      <div class="main_content">
+        <div class="header" style="padding-top: 50px; padding-bottom: 1px">
+          Profile
+          <form action="http://localhost:3000/logout" method="POST">
+            <button
+              class="row button"
+              type="submit"
+              onclick="logout()"
+              style="padding-bottom: 30px"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
+        <div class="info">
+          <div class="container">
+            <div class="main-body">
+              <div class="col-md-8">
+                <div class="card mb-3">
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-sm-4">
+                        <h6 class="mb-2">Your Account Balance</h6>
+                      </div>
+
+                      <div class="col-sm-2 text-secondary" id="balance"></div>
+                    </div>
+                    <hr />
+
+                    <div class="row">
+                      <div class="col-sm-4">
+                        <a
+                          class="btn btn-custom"
+                          onclick="edit()"
+                          target="__blank"
+                          >Recharge Account</a
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- The Modal -->
+        <div id="myModal" class="modal1">
+          <!-- Modal content -->
+          <div class="modal1-content">
+            <span class="close">&times;</span>
+            <h2 style="padding-bottom: 20px">Recharge Account</h2>
+            <form
+              id="stationForm"
+              action="http://localhost:3000/recharge"
+              method="POST"
+            >
+              <iframe
+                src="https://ipay.clictopay.com:443/epg/merchants/CLICTOPAY/payment.html?language=ang"
+                frameborder="0"
+                class="col-12 my-4"
+                style="height: 400px"
+              ></iframe>
+              <div class="row">
+                <input type="text" id="balance" name="balance" /><br />
+
+                <button class="SUBMIT" type="submit">Recharge</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      fetch("/profilee")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Data received:", data);
+          $("#balance").text(data.account_balance);
+        })
+        .catch((error) => console.error("Error:", error));
+
+      function edit() {
+        var modal = document.getElementById("myModal");
+        modal.style.display = "block";
+      }
+
+      // Close the modal when the close button is clicked
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("close")) {
+          var modal = document.getElementById("myModal");
+          modal.style.display = "none";
+        }
+      });
+
+      // Function to close the modal when clicking outside of it
+      window.onclick = function (event) {
+        var modal = document.getElementById("myModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+      if (
+        window.location.href.includes(
+          "/recharge.html?message=Profile+updated+successfully"
+        )
+      ) {
+        alert("Profile updated successfully");
+      }
+    </script>
+  </body>
+</html>

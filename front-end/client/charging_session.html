@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Horizop</title>
+    <link rel="stylesheet" href="../styles.css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link rel="canonical" href="https://getbootstrap.com/docs/3.4/css/" />
+
+    <link href="/docs/3.4/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <link
+      href="data:text/css;charset=utf-8,"
+      data-href="/docs/3.4/dist/css/bootstrap-theme.min.css"
+      rel="stylesheet"
+      id="bs-theme-stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css"
+    />
+
+    <link href="/docs/3.4/assets/css/docs.min.css" rel="stylesheet" />
+  </head>
+  <body style="overflow-x: hidden" class="container">
+    <div class="wrapper">
+      <div class="sidebar hidden">
+        <button
+          style="
+            font-size: 24px;
+            color: black;
+            background: none;
+            padding: 10px;
+            border: none;
+          "
+          class="toggle-button"
+        >
+          <i class="bi bi-layout-sidebar"></i>
+        </button>
+
+        <img
+          class="img"
+          src="../horizop.jpg"
+          width="80"
+          height="80"
+          style="position: relative; margin-left: 40px"
+        />
+
+        <h2>EVCS</h2>
+
+        <ul>
+          <li>
+            <a href="../profilee.html"><i class="fa fa-money"></i> Profile</a>
+          </li>
+          <li>
+            <a href="../map.html"><i class="fa fa-money"></i> Map</a>
+          </li>
+          <li>
+            <a href="client_stations.html" class="chargers"
+              ><img
+                src="../cs.png"
+                style="width: 20px; position: relative; top: 3px"
+              />
+              Chargers</a
+            >
+          </li>
+
+          <li>
+            <a href="client_session.html"
+              ><i class="fa fa-money"></i> Sessions</a
+            >
+          </li>
+          <li>
+            <a href="recharge.html"
+              ><i class="fa fa-money"></i> Recharge Account</a
+            >
+          </li>
+        </ul>
+      </div>
+
+      <div class="main_content">
+        <div class="header" style="padding-top: 50px; padding-bottom: 1px">
+          <button
+            style="
+              font-size: 24px;
+              color: black;
+              background: none;
+              border: none;
+            "
+            class="show-button"
+          >
+            <i class="bi bi-layout-sidebar"></i>
+          </button>
+
+          <form action="http://localhost:3000/logout" method="POST">
+            <button
+              class="row button"
+              type="submit"
+              onclick="logout()"
+              style="padding-bottom: 30px"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
+        <div class="info">
+          <section class="list">
+            <ul id="chargingStationsList"></ul>
+          </section>
+
+          <button
+            id="start"
+            onclick="addNewStation()"
+            class="bn"
+            type="submit"
+            style="top: 150px; left: -332px"
+          >
+            Start Charging
+          </button>
+
+          <img class="image" src="EV-charging.png" width="50%" height="50%" />
+          <!-- The Modal -->
+
+          <div id="myModal" class="modal">
+            <!-- Modal content -->
+            <div
+              class="modal-content"
+              style="padding: 30px; width: 30%; margin-top: 15%"
+            >
+              <span class="close">&times;</span>
+              <!-- <h2 style="padding-bottom: 20px;">Start Charging</h2> -->
+              <div class="class1">
+                <p id="balanceResult"></p>
+                <p id="chargetime"></p>
+                <br />
+                <br />
+                <p id="status"></p>
+
+                <button
+                  id="schedule"
+                  style="display: none"
+                  onclick="schedulecharging() "
+                  style="top: 100px; left: 140px"
+                  class="bn"
+                  type="submit"
+                >
+                  Schedule Charging
+                </button>
+
+                <button
+                  id="START1"
+                  style="display: none"
+                  onclick="startcharging() "
+                  style="margin: -40px; left: 140px"
+                  class="bn"
+                  type="submit"
+                >
+                  Start Charging
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="myModal1" class="modal">
+            <!-- Modal content -->
+            <div
+              class="modal-content"
+              style="padding: 30px; width: 30%; margin-top: 15%"
+            >
+              <div style="border-top: 300px">
+                <p id="status"></p>
+                <p
+                  class="class1"
+                  style="padding-left: 30px; padding-top: 60px"
+                  id="remaining_balance"
+                ></p>
+
+                <div
+                  class="class1"
+                  style="padding-left: 120px"
+                  id="chargingText"
+                ></div>
+
+                <button
+                  id="stop"
+                  class="bn"
+                  type="submit"
+                  style="margin: -10px; left: 100px"
+                >
+                  Stop Charging
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let qrcode = new URLSearchParams(location.search).get("qrcode");
+      console.log("Fetch URL:", `/station_details?qrcode=${qrcode}`);
+      console.log("qr:", `${qrcode}`);
+      const qrcodeInt = parseInt(qrcode);
+
+      fetch(`/station_details`)
+        .then((response) => response.json())
+        .then((data) => {
+          const stationsList = document.getElementById("chargingStationsList");
+          data.forEach((station) => {
+            console.log("station.station_id:", `${station.station_id}`);
+            console.log("qrcode:", qrcodeInt);
+
+            if (station.station_id === qrcodeInt) {
+              const listItem = document.createElement("li");
+              listItem.setAttribute("data-station-id", station.station_id);
+              listItem.innerHTML = `
+                        <b>Station Name:</b> ${station.Station_name}<br>
+                        <b>Charging Type:</b> ${station.charging_type}<br>
+                        <b>Power Rating:</b> ${station.power_rating}<br>
+                        <b>Pricing:</b> ${station.Pricing} per hour <br>
+                        `;
+              stationsList.appendChild(listItem);
+            }
+          });
+        })
+        .catch((error) => console.error("Error:", error));
+
+      document.getElementById("start").addEventListener("click", function () {
+        const sessionId = sessionStorage.getItem("sessionId");
+
+        fetch("http://localhost:3000/charging_session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sessionId, qrcodeInt }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById(
+              "balanceResult"
+            ).innerText = `Your Balance is : ${data.account_balance}`;
+            document.getElementById(
+              "chargetime"
+            ).innerText = `Your max Charging Time is : ${data.chargingtime.hours} hours ${data.chargingtime.minutes} minutes`;
+            console.log("status", data.status);
+            if (data.account_balance !== 0) {
+              document.getElementById("START1").style.display = "block";
+            }
+            if (data.status == 1) {
+              document.getElementById(
+                "status"
+              ).innerText = `The station is busy `;
+              document.getElementById("START1").style.display = "none";
+              document.getElementById("schedule").style.display = "block";
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      });
+
+      //** START charging*/
+
+      let session_id;
+      document.getElementById("START1").addEventListener("click", function () {
+        fetch("http://localhost:3000/START_session1", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ qrcodeInt }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.account_balance !== undefined) {
+              if (data.account_balance == 0) {
+                document.getElementById("chargingText").textContent = "";
+                alert("`Your Remaining Balance is : 0");
+                location.reload();
+              } else {
+                alert("Charging finished");
+
+                location.reload();
+              }
+            } else if (data.stop !== undefined) {
+              if (data.stop == 1) {
+                alert("Charging Stopped");
+                location.reload();
+              }
+            }
+          })
+          .then((data) => {
+            document.getElementById(
+              "remaining_balance"
+            ).innerText = `your remaining balance: ${data.balance}`;
+
+            if (data.account_balance) {
+              alert("Charging started successfully");
+            } else {
+              alert("Insufficient Balance");
+            }
+          })
+
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      });
+
+      function startcharging() {
+        var modal = document.getElementById("myModal1");
+        modal.style.display = "block";
+
+        // Close the modal when the close button is clicked
+        document.addEventListener("click", function (event) {
+          if (event.target.classList.contains("close")) {
+            var modal = document.getElementById("myModal1");
+            modal.style.display = "none";
+          }
+        });
+
+        // Function to close the modal when clicking outside of it
+        window.onclick = function (event) {
+          var modal = document.getElementById("myModal1");
+          if (event.target == modal) {
+            modal.style.display = "none";
+          }
+        };
+      }
+
+      function addNewStation() {
+        var modal = document.getElementById("myModal");
+        modal.style.display = "block";
+
+        // Close the modal when the close button is clicked
+        document.addEventListener("click", function (event) {
+          if (event.target.classList.contains("close")) {
+            var modal = document.getElementById("myModal");
+            modal.style.display = "none";
+          }
+        });
+
+        // Function to close the modal when clicking outside of it
+        window.onclick = function (event) {
+          var modal = document.getElementById("myModal");
+          if (event.target == modal) {
+            modal.style.display = "none";
+          }
+        };
+      }
+
+      document.getElementById("stop").addEventListener("click", function () {
+        const sessionId = sessionStorage.getItem("sessionId");
+
+        fetch("http://localhost:3000/stop_session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sessionId }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("account_balance").innerText = data.balance;
+            alert("Charging stopped successfully");
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      });
+
+      function addNewStation() {
+        var modal = document.getElementById("myModal");
+        modal.style.display = "block";
+
+        document.addEventListener("click", function (event) {
+          if (event.target.classList.contains("close")) {
+            var modal = document.getElementById("myModal");
+            modal.style.display = "none";
+          }
+        });
+
+        window.onclick = function (event) {
+          var modal = document.getElementById("myModal");
+          if (event.target == modal) {
+            modal.style.display = "none";
+          }
+        };
+      }
+
+      function updateText() {
+        let chargingText = document.getElementById("chargingText");
+        chargingText.textContent = "Charging ";
+        setInterval(() => {
+          chargingText.textContent += ".";
+          if (chargingText.textContent.length > 11) {
+            chargingText.textContent = "Charging";
+          }
+        }, 500);
+      }
+      updateText();
+
+      function logout() {
+        document.getElementsByTagName("title")[0].innerHTML = "login.html";
+        window.history.pushState({}, "login.html", "/login.html");
+        window.onpopstate = function () {
+          window.history.go(1);
+        };
+
+        window.location.replace("/login.html");
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var toggleButton = document.querySelector(".toggle-button");
+        var showButton = document.querySelector(".show-button");
+        var sidebar = document.querySelector(".sidebar");
+
+        toggleButton.addEventListener("click", function () {
+          sidebar.classList.add("hidden");
+        });
+
+        showButton.addEventListener("click", function () {
+          sidebar.classList.remove("hidden");
+        });
+      });
+    </script>
+  </body>
+</html>

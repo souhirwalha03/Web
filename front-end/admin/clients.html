@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Clients</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <meta charset="UTF-8" />
+    <title>Horizop</title>
+
+    <link rel="stylesheet" href="../styles.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="sidebar">
+        <img
+          class="img"
+          src="../horizop.jpg"
+          width="80"
+          height="80"
+          style="position: relative; margin-left: 40px"
+        />
+
+        <h2>EVCS</h2>
+        <ul>
+          <li>
+            <a href="../profilee.html"><i class="fa fa-money"></i> Profile</a>
+          </li>
+
+          <li>
+            <a href="chart.html"><i class="fa fa-bar-chart"></i> Overview</a>
+          </li>
+          <li>
+            <a href="cars.html"><i class="fa fa-bar-chart"></i> Cars</a>
+          </li>
+
+          <li>
+            <a href="Chargers.html" class="chargers"
+              ><img
+                src="../cs.png"
+                style="width: 20px; position: relative; top: 3px"
+              />
+              Stations</a
+            >
+          </li>
+          <li>
+            <a href="sessions.html"><i class="fa fa-money"></i> Sessions</a>
+          </li>
+          <li>
+            <a href="clients.html"><i class="fa fa-credit-card"></i> Clients</a>
+          </li>
+          <li>
+            <a href="../map.html"><i class="fa fa-money"></i> Map</a>
+          </li>
+          <li>
+            <a href="admin.html"><i class="fa fa-bar-chart"></i> Admins</a>
+          </li>
+          <li>
+            <a href="company.html"><i class="fa fa-bar-chart"></i> Companies</a>
+          </li>
+        </ul>
+      </div>
+      <div class="main_content">
+        <div class="header" style="padding-top: 50px; padding-bottom: 1px">
+          Clients
+          <form action="http://localhost:3000/logout" method="POST">
+            <button
+              class="row button"
+              type="submit"
+              onclick="logout()"
+              style="padding-bottom: 30px"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
+        <div class="info">
+          <div class="input-group" id="search">
+            <input
+              type="search"
+              id="searchInput"
+              class="form-control"
+              placeholder="Search"
+              aria-label="Search"
+              aria-describedby="search-addon"
+            />
+            <span class="input-group-text" id="search-addon">
+              <i class="fa fa-search"></i>
+            </span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Client ID</th>
+                <th>Client Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Address</th>
+                <th>RFID Tag ID</th>
+                <th>Account Balance</th>
+                <th>Company Name</th>
+              </tr>
+            </thead>
+            <tbody id="ClientsTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="myModal" class="modal1">
+          <!-- Modal content -->
+          <div class="modal1-content" style="top: 150px; height: 50%">
+            <span class="close">&times;</span>
+            <h2 style="padding-bottom: 80px"></h2>
+            <form
+              id="stationForm"
+              action="http://localhost:3000/assign_rfid"
+              method="POST"
+            >
+              <input type="hidden" id="clientId" name="clientId" />
+              <div class="row">
+                <label for="Name">RFID Card id:</label><br />
+
+                <input type="text" id="RFID_tag_ID" name="RFID_tag_ID" /><br />
+
+                <button class="SUBMIT" type="submit">Confirm</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("bnd")) {
+          const clientId = event.target.getAttribute("data-client-id");
+          edit(clientId);
+        } else if (event.target.classList.contains("close")) {
+          var modal = document.getElementById("myModal");
+          modal.style.display = "none";
+        }
+      });
+
+      function edit(clientId) {
+        var modal = document.getElementById("myModal");
+        modal.style.display = "block";
+        document.getElementById("clientId").value = clientId;
+      }
+
+      window.onclick = function (event) {
+        var modal = document.getElementById("myModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+
+      fetch("/clients")
+        .then((response) => response.json())
+        .then((data) => {
+          const tableBody = document.getElementById("ClientsTableBody");
+          data.forEach((client) => {
+            const row = document.createElement("tr");
+            row.setAttribute("data-client-id", client.client_id);
+
+            row.innerHTML = `
+
+                <td>${client.client_id}</td>
+                <td>${client.username}</td>
+                <td>${client.email}</td>
+                <td>${client.phone_number}</td>
+                <td>${client.address}</td>
+                <td>${client.RFID_tag_ID}</td>
+                <td>${client.account_balance}</td>
+                <td>${client.Company_name}</td>
+
+                <td><button class="button1"  onclick="deleteclient(${
+                  client.client_id
+                })">&times;</button></td>
+
+                ${
+                  client.RFID_tag_ID === null
+                    ? `<td><button class="bnd" style="font-size:15px; text-decoration: underline;" data-client-id="${client.client_id}">Assign RFID Card</button></td>`
+                    : ""
+                }
+            `;
+            tableBody.appendChild(row);
+          });
+        })
+        .catch((error) => console.error("Error:", error));
+
+      function logout() {
+        document.getElementsByTagName("title")[0].innerHTML = "login.html";
+        window.history.pushState({}, "login.html", "/login.html");
+        window.onpopstate = function () {
+          window.history.go(1);
+        };
+
+        window.location.replace("/login.html");
+      }
+
+      const searchInput = document.getElementById("searchInput");
+      searchInput.addEventListener("input", function () {
+        const filter = searchInput.value.toUpperCase();
+        const rows = document.querySelectorAll("#ClientsTableBody tr");
+        rows.forEach((row) => {
+          const cells = row.querySelectorAll("td");
+          let found = false;
+          cells.forEach((cell) => {
+            if (cell.textContent.toUpperCase().indexOf(filter) > -1) {
+              found = true;
+            }
+          });
+          row.style.display = found ? "" : "none";
+        });
+      });
+
+      function deleteclient(client_id) {
+        fetch(`/clients/${client_id}`, {
+          method: "DELETE",
+        })
+          .then((response) => {
+            if (response.ok) {
+              const row = document.querySelector(
+                `tr[data-client-id="${client_id}"]`
+              );
+              if (row) {
+                row.remove();
+              }
+            } else {
+              console.error("Failed to delete client:", response.statusText);
+            }
+          })
+          .catch((error) => console.error("Error deleting client:", error));
+      }
+    </script>
+  </body>
+</html>

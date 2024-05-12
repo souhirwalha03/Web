@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Clients</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <meta charset="UTF-8" />
+    <title>Horizop</title>
+
+    <link rel="stylesheet" href="../styles.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="sidebar">
+        <img
+          class="img"
+          src="../horizop.jpg"
+          width="80"
+          height="80"
+          style="position: relative; margin-left: 40px"
+        />
+
+        <h2>EVCS</h2>
+        <ul class="navbar-nav">
+          <li>
+            <a href="add_user.html"
+              ><i class="fa fa-money"></i> Add New Client</a
+            >
+          </li>
+          <li>
+            <a href="clients.html"><i class="fa fa-money"></i> Clients</a>
+          </li>
+        </ul>
+      </div>
+      <div class="main_content">
+        <div class="header" style="padding-top: 50px; padding-bottom: 1px">
+          Clients
+          <form action="http://localhost:3000/logout" method="POST">
+            <button
+              class="row button"
+              type="submit"
+              onclick="logout()"
+              style="padding-bottom: 30px"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
+        <div class="info">
+          <div class="input-group" id="search">
+            <input
+              type="search"
+              id="searchInput"
+              class="form-control"
+              placeholder="Search"
+              aria-label="Search"
+              aria-describedby="search-addon"
+            />
+            <span class="input-group-text" id="search-addon">
+              <i class="fa fa-search"></i>
+            </span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Client ID</th>
+                <th>Client Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Address</th>
+                <th>RFID Tag ID</th>
+                <th>Account Balance</th>
+              </tr>
+            </thead>
+            <tbody id="ClientsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="myModal2" class="modal1">
+        <!-- Modal content -->
+        <div class="modal1-content">
+          <span class="close">&times;</span>
+          <h2 style="padding-bottom: 20px">Recharge Account</h2>
+          <iframe
+            src="https://ipay.clictopay.com:443/epg/merchants/CLICTOPAY/payment.html?language=ang"
+            frameborder="0"
+            class="col-12 my-4"
+            style="height: 400px"
+          ></iframe>
+          <input type="hidden" id="clientId" name="clientId" /><br />
+
+          <div class="row">
+            <input type="text" id="balance" name="balance" /><br />
+
+            <button class="SUBMIT" type="submit">Recharge</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("bnd")) {
+          const clientId = event.target.getAttribute("data-client-id");
+        } else if (event.target.classList.contains("close")) {
+          var modal = document.getElementById("myModal2");
+          modal.style.display = "none";
+        }
+      });
+
+      function edit(clientId) {
+        console.log("clientId1", clientId);
+        var modal = document.getElementById("myModal2");
+        modal.style.display = "block";
+        document.getElementById("clientId").value = clientId; 
+      }
+
+      fetch("/company_clients")
+        .then((response) => response.json())
+        .then((data) => {
+          const tableBody = document.getElementById("ClientsTableBody");
+          console.log("data", data);
+          data.forEach((client) => {
+            const row = document.createElement("tr");
+            row.setAttribute("data-client-id", client.client_id);
+
+            row.innerHTML = `
+                <td>${client.client_id}</td>
+                <td>${client.username}</td>
+                <td>${client.email}</td>
+                <td>${client.phone_number}</td>
+                <td>${client.address}</td>
+                <td>${client.RFID_tag_ID}</td>
+                <td>${client.account_balance}</td>
+                
+                <td>
+    <a class="btn btn-custom" onclick="edit(${client.client_id})">Recharge Account</a>
+</td>
+                <td><button class="button1"  onclick="deleteclient(${client.client_id})">&times;</button></td>
+
+            `;
+            tableBody.appendChild(row);
+          });
+        })
+        .catch((error) => console.error("Error:", error));
+
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("SUBMIT")) {
+          const balance = document.getElementById("balance").value;
+          const clientId = document.getElementById("clientId").value;
+          console.log("clientId2", clientId);
+
+          fetch(`/recharge/${clientId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ balance: balance }),
+          })
+            .then((response) => {
+              if (response.ok) {
+                alert("Account recharged successfully");
+                location.reload();
+              } else {
+                alert("Failed to recharge account");
+              }
+            })
+            .catch((error) =>
+              console.error("Error recharging account:", error)
+            );
+        }
+      });
+
+      function logout() {
+        document.getElementsByTagName("title")[0].innerHTML = "login.html";
+        window.history.pushState({}, "login.html", "/login.html");
+        window.onpopstate = function () {
+          window.history.go(1);
+        };
+
+        window.location.replace("/login.html"); 
+      }
+
+      const searchInput = document.getElementById("searchInput");
+      searchInput.addEventListener("input", function () {
+        const filter = searchInput.value.toUpperCase();
+        const rows = document.querySelectorAll("#ClientsTableBody tr");
+        rows.forEach((row) => {
+          const cells = row.querySelectorAll("td");
+          let found = false;
+          cells.forEach((cell) => {
+            if (cell.textContent.toUpperCase().indexOf(filter) > -1) {
+              found = true;
+            }
+          });
+          row.style.display = found ? "" : "none";
+        });
+      });
+
+      function deleteclient(client_id) {
+        fetch(`/clients/${client_id}`, {
+          method: "DELETE",
+        })
+          .then((response) => {
+            if (response.ok) {
+              // Remove the row from the table if the delete request was successful
+              const row = document.querySelector(
+                `tr[data-client-id="${client_id}"]`
+              );
+              if (row) {
+                row.remove();
+              }
+            } else {
+              console.error("Failed to delete client:", response.statusText);
+            }
+          })
+          .catch((error) => console.error("Error deleting client:", error));
+      }
+
+      // Close the modal when the close button is clicked
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("close")) {
+          var modal = document.getElementById("myModal2");
+          modal.style.display = "none";
+        }
+      });
+
+      // Function to close the modal when clicking outside of it
+      window.onclick = function (event) {
+        var modal = document.getElementById("myModal2");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+      if (
+        window.location.href.includes(
+          "clients.html?message=Profile+updated+successfully"
+        )
+      ) {
+        alert("successfully recharched");
+      }
+    </script>
+  </body>
+</html>
