@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { sql, poolPromise } = require("../config/connect");
+const nodemailer = require("nodemailer");
 
 const path = require("path");
 router.use(express.static(path.join(__dirname, "..", "front-end")));
@@ -62,6 +63,32 @@ router.post("/register", async (req, res) => {
         .input("user_id", sql.Int, userId).query(`UPDATE clients 
                             SET RFID_tag_ID = @RFID
                             WHERE client_id = @user_id`);
+            // Send email to client
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: "stocklanamethyst@gmail.com", // Your Gmail address
+              pass: "clglpsufkljysaff", // Your Gmail password
+            },
+          });
+
+          const mailOptions = {
+            from: "stocklanamethyst@gmail.com",
+            to: email,
+            subject: "Welcome to Horizop Energy!",
+            html: `<p>Dear ${username},</p>
+                  <p>Your account has been successfully created.</p>
+                  <p>Your temporary password is: <strong>${password}</strong></p>
+                  <p>Please login to your account and change your password immediately.</p>`,
+          };
+
+          transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+              console.error(error);
+            } else {
+              console.log("Email sent: " + info.response);
+            }
+    });
       return res.redirect(
         "/company_admin/add_user.html?message=user+added+successfully"
       );

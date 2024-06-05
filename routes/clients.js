@@ -22,7 +22,7 @@ router.get("/clients", async (req, res) => {
         .request()
         .input("rfid", sql.BigInt, client.RFID_tag_ID).query(`
             SELECT a.Company_name
-            FROM Company_RFIDs c
+            FROM RFIDs c
             JOIN Admin a ON c.admin_id = a.admin_id
             WHERE c.RFID_tag_ID = @rfid;
         `);
@@ -113,7 +113,7 @@ router.delete("/admin/:adminId", async (req, res) => {
             SELECT c.client_id
             FROM Users u
             JOIN Clients c ON u.user_id = c.client_id
-            JOIN Company_RFIDs cr ON cr.RFID_tag_ID = c.RFID_tag_ID
+            JOIN RFIDs cr ON cr.RFID_tag_ID = c.RFID_tag_ID
             JOIN Admin a ON cr.admin_id = a.admin_id
             WHERE u.role = 'client';
           `);
@@ -175,7 +175,7 @@ router.get("/rfid/:admin_id", async (req, res) => {
     const result = await pool
       .request()
       .input("user_id", sql.Int, admin_id)
-      .query("SELECT RFID_tag_ID FROM Company_RFIDs WHERE admin_id=@user_id");
+      .query("SELECT RFID_tag_ID FROM RFIDs WHERE admin_id=@user_id");
 
     const RFID_tag_IDs = result.recordset.map((record) => record.RFID_tag_ID);
     console.log("RFID_tag_IDs", RFID_tag_IDs);
@@ -267,7 +267,7 @@ router.post("/add-admin", async (req, res) => {
           await request
             .input(`RFID_tag_ID_${key}`, sql.BigInt, RFID_tag_ID)
             .query(
-              `INSERT INTO Company_RFIDs (RFID_tag_ID, admin_id) VALUES (@RFID_tag_ID_${key}, @user_id);`
+              `INSERT INTO RFIDs (RFID_tag_ID, admin_id) VALUES (@RFID_tag_ID_${key}, @user_id);`
             );
         }
       }

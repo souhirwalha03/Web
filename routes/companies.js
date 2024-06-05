@@ -3,7 +3,11 @@ const router = express.Router();
 const { sql, poolPromise } = require("../config/connect");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
+const bodyParser = require('body-parser');
+const multer = require('multer');
+const fs = require('fs');
 
+const upload = multer({ dest: 'uploads/' });
 router.post("/add-rfid", async (req, res) => {
   console.log("req.body", req.body);
   try {
@@ -24,12 +28,12 @@ router.post("/add-rfid", async (req, res) => {
             .request()
             .input(`RFID_tag_ID_${key}`, sql.BigInt, RFID_tag_ID)
             .query(
-              `SELECT RFID_tag_ID FROM Company_RFIDs WHERE RFID_tag_ID = @RFID_tag_ID_${key}`
+              `SELECT RFID_tag_ID FROM RFIDs WHERE RFID_tag_ID = @RFID_tag_ID_${key}`
             );
 
           if (result.recordset.length === 0) {
             await request.input(`RFID_tag_ID_${key}`, sql.BigInt, RFID_tag_ID)
-              .query(`INSERT INTO Company_RFIDs (RFID_tag_ID, admin_id)
+              .query(`INSERT INTO RFIDs (RFID_tag_ID, admin_id)
                                     VALUES (@RFID_tag_ID_${key}, @admin_id);`);
 
             console.log("RFID tag inserted successfully");
@@ -56,7 +60,7 @@ router.post("/add-rfid", async (req, res) => {
   }
 });
 
-router.post("/add-admin-company", async (req, res) => {
+router.post("/add-admin-company", upload.single('jsonFile'), async (req, res) => {
   const { Name, Email, password, Address, Phone, role, Company, ...RFIDs } =
     req.body;
 
@@ -126,7 +130,19 @@ router.post("/add-admin-company", async (req, res) => {
                     SET Company_name = @Company
                     WHERE admin_id = @user_id;
             `);
+            const jsonData = JSON.parse(fs.readFileSync(req.file.path, 'utf8'));
+            fs.unlinkSync(req.file.path); // Delete the uploaded file
+    
+            req.body.json = jsonData;
+    
 
+      req.body.json = jsonData;
+    jsonData.forEach(async (item) => {
+      console.log(item);
+      console.log(item.RFID_tag_ID);
+        await pool
+        .request().input("user_id", sql.Int, userId).query(`INSERT INTO RFIDs (RFID_tag_ID, admin_id) VALUES (${item.RFID_tag_ID}, @user_id)`);
+      });
     // Insert the RFID tags into the Company_RFIDs table
     for (const key in RFIDs) {
       if (Object.hasOwnProperty.call(RFIDs, key)) {
@@ -134,7 +150,7 @@ router.post("/add-admin-company", async (req, res) => {
         await request
           .input(`RFID_tag_ID_${key}`, sql.BigInt, RFID_tag_ID)
           .query(
-            `INSERT INTO Company_RFIDs (RFID_tag_ID, admin_id) VALUES (@RFID_tag_ID_${key}, @user_id);`
+            `INSERT INTO RFIDs (RFID_tag_ID, admin_id) VALUES (@RFID_tag_ID_${key}, @user_id);`
           );
       }
     }
@@ -155,7 +171,7 @@ router.delete("/rfid/:rfidTagID", async (req, res) => {
   const { admin_id, rfidTagID } = req.params;
   const pool = await poolPromise;
   pool
-    .query(`DELETE FROM Company_RFIDs WHERE RFID_tag_ID =  ${rfidTagID}`)
+    .query(`DELETE FROM RFIDs WHERE RFID_tag_ID =  ${rfidTagID}`)
 
     .then(() => {
       res.status(200).send("RFID tag deleted successfully");
@@ -175,7 +191,7 @@ router.get("/getRFIDTags", async (req, res) => {
       .request()
       .input("userId", sql.Int, req.session.userId)
       .query(
-        "SELECT cr.RFID_tag_ID FROM Company_RFIDs cr LEFT JOIN Clients c ON cr.RFID_tag_ID = c.RFID_tag_ID WHERE c.RFID_tag_ID IS NULL AND cr.admin_id = @userId; "
+        "SELECT cr.RFID_tag_ID FROM RFIDs cr LEFT JOIN Clients c ON cr.RFID_tag_ID = c.RFID_tag_ID WHERE c.RFID_tag_ID IS NULL AND cr.admin_id = @userId; "
       );
 
     res.json(result.recordset);
@@ -201,7 +217,7 @@ router.get("/company_clients", async (req, res) => {
             FROM Clients c
             WHERE c.RFID_tag_ID IN (
                 SELECT cr.RFID_tag_ID
-                FROM Company_RFIDs cr
+                FROM RFIDs cr
                 WHERE cr.admin_id = @userId
             )
         );
@@ -213,5 +229,7 @@ router.get("/company_clients", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+
 
 module.exports = router;

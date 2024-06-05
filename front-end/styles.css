@@ -204,12 +204,13 @@ th {
 .modal-content {
   background-color: #fefefe;
   border: 2px solid #888;
-  width: 900px; 
-  height: 300px;
+
   border-radius: 5px;
   left: 450px;
   position: relative;
   font-size: 15px;
+  height: auto; /* Set height to auto to adjust based on content */
+  overflow-y: auto; /* Enable vertical scroll if needed */
   
 }
 
@@ -265,8 +266,13 @@ th {
 }
 
 .class1{
-  padding-top: 40px;
 
+  padding-top: 40px;
+  
+
+}
+#chargingText{
+  padding-left: 200px !important;
 }
 /*form*/
 
@@ -375,6 +381,7 @@ form .row input::placeholder{
     top: 10px !important;
     left: 100px !important;
   }
+  
 }
 .show-button {
   display: none  !important;
@@ -390,12 +397,12 @@ form .row input::placeholder{
     left: 10px;
   }
   .image{
-    left: -70px;
+    left: -20px;
 
   }
   .bn {
     top: -120px !important; 
-    left:10px !important; 
+    left:-50px !important; 
   }
   .hidden {
     display: none;
@@ -421,10 +428,45 @@ form .row input::placeholder{
   .show-button {
     display: block !important;
   }
-
   
+  .modal-content {
+    left : 30px !important;
+    top : 100px !important;
+  }
+  .dashboard{
+    width: 420px !important; 
+    height: auto !important; 
+
+  }
+  #showIotChart{
+    top: 10px !important;
+    left: 10px !important;
+
+  }
+  #stop{
+    top: 10px !important;
+    left: 10px !important;
+  }
+  #logout{
+    left: -380px !important;
+  }
+
+  #chargingText{
+
+      padding-left: 20px
+    
+    
+  }
+  #model_dashboard{
+    left: 100px !important;
+    width: 400px !important;
+  }
+
 }
 
+.dashboard{
+  width: 700px; height: 300px; margin-bottom: 50px !important;
+}
 #chargingStationsList li {
   display: inline-block; /* Display list items inline */
   text-align: center; /* Align text to the left within each list item */
@@ -577,3 +619,4 @@ form .row input::placeholder{
 
 
 }
+

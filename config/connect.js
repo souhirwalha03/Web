@@ -1,28 +1,38 @@
 const sql = require('mssql');
 
 // Configure the database connection
-/*
-const config = {
-    user: 'sw',
-    password: '123456789',
-    server: 'DESKTOP-4VEVDS1',
-    database: 'EVCS',
-    options: {
-        encrypt: false,
-        enableArithAbort: false
-    }
-};
-*/
+
+// const config = {
+//     user: 'sw',
+//     password: '123456789*',
+//     server: 'DESKTOP-4VEVDS1',
+//     database: 'EVCS',
+//     options: {
+//         encrypt: false,
+//         enableArithAbort: false
+//     }
+// };
+
+
+// const config = {
+//     user: 'SA',
+//     password: '123456789*',
+//     server: 'localhost',
+//     database: 'EVCS_DB',
+//     options: {
+//         encrypt: false,
+//         enableArithAbort: false
+//     }
+// };
 
 const config = {
-    user: 'SA',
-    password: '123456789*',
-    server: 'localhost',
-    database: 'EVCS_DB',
-    options: {
-        encrypt: false,
-        enableArithAbort: false
-    }
+  user: 'sw',
+  password: '123456789*',
+  server: 'DESKTOP-TUTE41G',
+  database: 'EVCS_DB',
+  options: {  encrypt: true, // for Azure
+  trustServerCertificate: true, // change to true for local dev / self-signed certs
+  }
 };
 const poolPromise = new sql.ConnectionPool(config)
   .connect()

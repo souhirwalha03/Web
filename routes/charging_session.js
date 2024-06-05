@@ -1,26 +1,194 @@
 const express = require("express");
 const router = express.Router();
 const { sql, poolPromise } = require("../config/connect");
+const http = require("http");
+const WebSocket = require("ws");
+const path = require("path");
+const EventHubReader = require("../scripts/event-hub-reader.js");
+const { Client } = require("azure-iothub");
+const { EventHubConsumerClient } = require("@azure/event-hubs");
+const EventEmitter = require("events");
+const dataEmitter = new EventEmitter();
 
 ("use strict");
 
-var Client = require("azure-iothub").Client;
 var Message = require("azure-iot-common").Message;
-var connectionString =
+const connectionString =
   "HostName=evcsHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=XMUuMZgN+pd2xs/sPVN4vEcJztHf28mEPAIoTA5L2ZQ=";
 var targetDevice = "evcsDevice";
+
 var serviceClient = Client.fromConnectionString(connectionString);
+const eventHubName = "iothub-ehub-evcshub-59299761-e00c403fa3";
+const consumerGroup = "$Default";
+const connectionString1 =
+  "Endpoint=sb://ihsuprodblres058dednamespace.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=Kk5EnysmSNHAA4gsYY7zLKx7aPu5l7qJ2AIoTMaTu5M=;EntityPath=iothub-ehub-evcshub-59299761-e00c403fa3";
+
+const consumerClient = new EventHubConsumerClient(
+  consumerGroup,
+  connectionString1,
+  eventHubName
+);
 
 let balance = 0;
+let Balance;
+
 let maxChargingTime = 0;
 let sessionID1;
 let stop_clicked = 0;
+let chargingPower;
+if (!connectionString) {
+  console.error(
+    `Environment variable IotHubConnectionString must be specified.`
+  );
+  process.exit(1);
+}
+
+const eventHubConsumerGroup = "gr";
+console.log(`Using event hub consumer group [${eventHubConsumerGroup}]`);
+
+const wss = new WebSocket.Server({ port: 3001 });
+
+wss.on("connection", (ws) => {
+  console.log("Client connected");
+
+  ws.on("close", () => {
+    console.log("Client disconnected");
+  });
+});
+let chargingstarted = null;
+let energy = null;
+let cost = null;
+
+// Function to wait for the 'dataReady' event
+function waitForData() {
+  return new Promise((resolve) => {
+    dataEmitter.once("dataReady", resolve);
+  });
+}
+
+function checkStatus(data) {
+  try {
+    const parsedData = JSON.parse(data);
+
+    if (parsedData.IotData && parsedData.IotData.status === 1) {
+      chargingstarted = parsedData.IotData.status;
+      console.log(`charging: ${chargingstarted}`);
+    }
+    // Check if the message contains energy and cost information
+    if (
+      parsedData.IotData.status === 0 &&
+      "energy" in parsedData.IotData &&
+      "Balance" in parsedData.IotData
+    ) {
+      chargingstarted = parsedData.IotData.status;
+      console.log(`charging: ${chargingstarted}`);
+      energy = parsedData.IotData.energy;
+      Balance = parsedData.IotData.Balance;
+      console.log(`Energy: ${energy}, balance: ${Balance}`);
+      // Emit an event when energy and Balance are defined
+      dataEmitter.emit("dataReady");
+    }
+  } catch (error) {
+    console.log("Error parsing data:", error);
+  }
+}
+
+wss.broadcast = (data) => {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      try {
+        console.log(`Broadcasting data ${data}`);
+        checkStatus(data);
+        client.send(data);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  });
+};
+
+let station_id;
+const eventHubReader = new EventHubReader(
+  connectionString,
+  eventHubConsumerGroup
+);
+
+(async () => {
+  await eventHubReader.startReadMessage((message, date, deviceId) => {
+    try {
+      const currentDate = date ? new Date(date) : new Date();
+      const formattedDate = currentDate.toLocaleDateString();
+      const formattedTime = currentDate.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const payload = {
+        IotData: message,
+        //MessageDate: date || new Date().toISOString(),
+        MessageDate: `${formattedDate} ${formattedTime}`,
+
+        DeviceId: deviceId,
+      };
+
+      wss.broadcast(JSON.stringify(payload));
+    } catch (err) {
+      console.error("Error broadcasting:", err);
+    }
+  });
+})();
 
 function printResultFor(op) {
   return function printResult(err, res) {
     if (err) console.log(op + " error: " + err.toString());
     if (res) console.log(op + " status: " + res.constructor.name);
   };
+}
+
+// let resolveStatus1;
+// let resolveStatus0;
+
+// async function receive() {
+//   try {
+//     // Subscribe to events from all partitions
+//     const subscription = consumerClient.subscribe({
+//       processEvents: async (events, context) => {
+//         for (const event of events) {
+//           const message = event.body;
+//           console.log(`Received message: ${JSON.stringify(message)}`);
+
+//           if (message.status === 1 && resolveStatus1) {
+//             resolveStatus1();
+//           } else if (message.status === 0 && message.energy && message.cost && resolveStatus0) {
+//             resolveStatus0();
+//           }
+//         }
+//       },
+//       processError: async (err) => {
+//         console.log(`Error: ${err.message}`);
+//       }
+//     });
+
+//     // Keep the subscription running indefinitely
+//     await new Promise(() => {});
+//   } catch (err) {
+//     console.log("Error: ", err.message);
+//   }
+// }
+
+function waitForStatus(status) {
+  return new Promise((resolve) => {
+    const checkInterval = setInterval(() => {
+      if (chargingstarted === status) {
+        clearInterval(checkInterval);
+        resolve();
+      } else if (stop_clicked == 1) {
+        clearInterval(checkInterval);
+        chargingstarted = 0;
+        resolve();
+      }
+    }, 1000); // Check every second
+  });
 }
 
 function receiveFeedback(err, receiver) {
@@ -43,19 +211,29 @@ serviceClient.open(function (err) {
     serviceClient.getFeedbackReceiver(receiveFeedback);
   }
 });
-function calculateMaxChargingTime(initialBalance, chargingRate) {
-  let totalMinutes = (initialBalance / chargingRate) * 60;
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = Math.round(totalMinutes % 60);
-  totalMinutes = Math.round(totalMinutes);
+function calculateMaxChargingTime(initialBalance, chargingRate, chargingPower) {
+  // Calculate maximum energy available
+  let maxenergy = initialBalance / chargingRate;
+  console.log("maxenergy", maxenergy);
 
-  const totalMilliseconds = totalMinutes * 60000;
+  // Calculate maximum charging time in hours
+  let maxChargingTime = maxenergy / chargingPower;
+  console.log("calculateMaxChargingTime", maxChargingTime);
+  
 
-  return { totalMilliseconds, totalMinutes, hours, minutes };
+  // Convert total hours to hours and minutes
+  const hours = Math.floor(maxChargingTime);
+  console.log("hours", hours);
+  
+  const minutes = Math.round((maxChargingTime - hours) * 60);
+  console.log("minutes", minutes);
+
+
+  return {   hours, minutes };
 }
-function send_to_IoThub(value) {
+function send_to_IoThub(value, balance, chargingRate) {
   let messages = [];
-  messages.push({ start: value });
+  messages.push({ start: value, balance: balance, chargingRate: chargingRate });
 
   var message = new Message(JSON.stringify(messages));
   message.ack = "full";
@@ -107,7 +285,7 @@ async function currenttime(
     console.log("start 2", start);
 
     result = await pool.request().query(`
-        INSERT INTO Charging_sessions (start_time, status, client_id)
+        INSERT INTO Charging_sessions (start_time, Status, client_id)
         VALUES('${datetime}',1, ${ID})
         
 
@@ -124,7 +302,7 @@ async function currenttime(
 
     result1 = await pool.request().query(`
         UPDATE Charging_sessions 
-        SET end_time = '${datetime}', cost = ${cost}, status = 0
+        SET end_time = '${datetime}', cost = ${cost}, Status = 0
         WHERE start_time ='${start}'`);
     return datetime;
   }
@@ -138,10 +316,10 @@ router.post("/charging_session", async (req, res) => {
     balance = result.recordset[0].account_balance;
 
     const result1 = await pool.request()
-      .query`SELECT Pricing FROM Charging_stations WHERE station_id = ${req.body.qrcodeInt} `;
+      .query`SELECT Pricing, power_rating FROM Charging_stations WHERE station_id = ${req.body.qrcodeInt} `;
     const chargingRate = result1.recordset[0].Pricing;
-
-    maxChargingTime = calculateMaxChargingTime(balance, chargingRate);
+    chargingPower = result1.recordset[0].power_rating;
+    maxChargingTime = calculateMaxChargingTime(balance, chargingRate, chargingPower);
 
     const ChargingTime = `${maxChargingTime.hours} hours ${maxChargingTime.minutes} minutes`;
     console.log("req.body.qrcodeInt ", req.body.qrcodeInt);
@@ -184,21 +362,50 @@ router.get("/station_details", async (req, res) => {
 });
 router.post("/START_session1", async (req, res) => {
   try {
-    console.log("sessionID1", sessionID1);
+    
     const pool = await poolPromise;
-    /* insert sessionid && client_id && station_id*/
 
+    //* Retrieve Pricing and Client Balance */
+    let chargingRate = null;
+    const result1 = await pool.request()
+      .query`SELECT Pricing FROM Charging_stations WHERE station_id = ${req.body.qrcodeInt}`;
+
+    if (result1.recordset.length > 0) {
+      chargingRate = result1.recordset[0].Pricing;
+      console.log("chargingRate", chargingRate);
+    } else {
+      console.log("No record found for sessionId:", sessionId);
+    }
+
+    balance = 0;
+
+    const result = await pool.request()
+      .query`SELECT account_balance FROM Clients WHERE client_id = ${req.session.userId}`;
+    balance = result.recordset[0].account_balance;
+    console.log("balance", balance);
+
+    //* send statrt 1
+    send_to_IoThub(1, balance, chargingRate);
+
+    //* wait for confirmation
+    // await receive(); // Start receiving messages
+    // console.log("Waiting for status 1...");
+    await waitForStatus(1); // Wait for status 1 message
+    console.log("Received status 1 message!");
+
+    //* insert sessionid && client_id && station_id*/
+    //* Insert Charging Session
     await pool.request().query(`
         INSERT INTO Charging_sessions (client_id, station_id)
         VALUES('${req.session.userId}', '${req.body.qrcodeInt}')
         `);
-
+    station_id = req.body.qrcodeInt;
+    //* Retrieve Latest Session ID
     let result5 = await pool.request().query(`
         SELECT TOP 1 session_id
         FROM Charging_sessions
         ORDER BY session_id DESC
         `);
-
     if (result5.recordset.length > 0) {
       sessionID1 = result5.recordset[0].session_id;
       console.log("New session_id:", sessionID1);
@@ -208,7 +415,7 @@ router.post("/START_session1", async (req, res) => {
 
     console.log("sessionID1", sessionID1);
 
-    /* insert start time && status 1 */
+    //* insert start time && Update status 1 */
 
     var currentdate = new Date();
     var datetime =
@@ -229,7 +436,7 @@ router.post("/START_session1", async (req, res) => {
 
     let result0 = await pool.request().query(`
         UPDATE Charging_sessions 
-        SET start_time = '${datetime}', status=1
+        SET start_time = '${datetime}', Status=1
         WHERE session_id = ${sessionID1}`);
 
     let result11 = await pool.request().query(`
@@ -237,98 +444,86 @@ router.post("/START_session1", async (req, res) => {
         SET availability = 'Unavailable'
         WHERE station_id = ${req.body.qrcodeInt} `);
 
-    /* get station Pricing && client balance */
-    let chargingRate = null;
-    const result1 = await pool.request()
-      .query`SELECT Pricing FROM Charging_stations WHERE station_id = ${req.body.qrcodeInt}`;
+    await waitForStatus(0); // Wait for status 1 message
+    console.log("Received status 0 message!");
 
-    if (result1.recordset.length > 0) {
-      chargingRate = result1.recordset[0].Pricing;
-      console.log("chargingRate", chargingRate);
-    } else {
-      console.log("No record found for sessionId:", sessionId);
-    }
+    if (stop_clicked == 0) {
+      // send_to_IoThub(0, balance);
+      var currentdate = new Date();
+      var datetime =
+        currentdate.getDate() +
+        "/" +
+        (currentdate.getMonth() + 1) +
+        "/" +
+        currentdate.getFullYear() +
+        " @ " +
+        currentdate.getHours() +
+        ":" +
+        currentdate.getMinutes() +
+        ":" +
+        currentdate.getSeconds();
 
-    balance = 0;
-
-    const result = await pool.request()
-      .query`SELECT account_balance FROM Clients WHERE client_id = ${req.session.userId}`;
-    balance = result.recordset[0].account_balance;
-    console.log("balance", balance);
-
-    /* calculate maxChargingTime */
-
-    maxChargingTime = calculateMaxChargingTime(balance, chargingRate);
-    console.log(
-      "maxChargingTime.totalMilliseconds:",
-      maxChargingTime.totalMilliseconds
-    );
-
-    let timeDifferenceMS = 0;
-    let currentTime = 0;
-    while (
-      balance > 0 &&
-      timeDifferenceMS < maxChargingTime.totalMilliseconds &&
-      stop_clicked != 1
-    ) {
-      send_to_IoThub(1);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      console.log("startTime", startTime);
-      currentTime = Date.now();
-
-      timeDifferenceMS = Math.round(currentTime - startTime);
-
-      console.log("Current Time:", currentTime);
-      console.log("Start Time:", startTime);
-      console.log("timeDifferenceMS:", timeDifferenceMS);
-      console.log("maxChargingTime:", maxChargingTime.totalMilliseconds);
-    } // WHILE LOOP
-
-    if (stop_clicked == 1) {
-      res.json({ stop: 1 });
-    }
-
-    send_to_IoThub(0);
-    var currentdate = new Date();
-    var datetime =
-      currentdate.getDate() +
-      "/" +
-      (currentdate.getMonth() + 1) +
-      "/" +
-      currentdate.getFullYear() +
-      " @ " +
-      currentdate.getHours() +
-      ":" +
-      currentdate.getMinutes() +
-      ":" +
-      currentdate.getSeconds();
-
-    let cost = (0.0833 * timeDifferenceMS * 1.667 * 0.00001).toFixed(2);
-    balance = (balance - cost).toFixed(2);
-    if (balance < 0) {
-      balance = 0;
-    }
-    let result8 = await pool.request().query(`
+      cost = (balance - Balance).toFixed(2);
+      // if (balance < 0) {
+      //   balance = 0;
+      // }
+      let result8 = await pool.request().query(`
                 UPDATE Charging_sessions 
-                SET end_time = '${datetime}', status = 0, Cost=${cost}
+                SET end_time = '${datetime}', Status = 0, Cost=${cost}, energy_consumed=${energy}
                 WHERE  session_id = '${sessionID1}' 
             `);
-    let result12 = await pool.request().query(`
+      let result12 = await pool.request().query(`
                 UPDATE Charging_stations 
                 SET availability = 'Available'
                 WHERE station_id = ${req.body.qrcodeInt} `);
 
-    result6 = await pool.request().query(`
+      result6 = await pool.request().query(`
                 UPDATE Clients
-                SET account_balance = ${balance}
+                SET account_balance = ${Balance}
                 WHERE client_id = ${req.session.userId}
             `);
 
-    if (stop_clicked == 0) {
-      res.json({ account_balance: balance, sessionID: sessionID1 });
+      if (stop_clicked == 0) {
+        res.json({ account_balance: Balance, sessionID: sessionID1 });
+      }
+      stop_clicked = 0;
+
+      // console.log("Waiting for status 0...");
+      // await waitForStatus(); // Wait for status 0 message
+      // console.log("Received status 0 message!");
+
+      //* Calculate Max Charging Time*/
+
+      // maxChargingTime = calculateMaxChargingTime(balance, chargingRate);
+      // console.log(
+      //   "maxChargingTime.totalMilliseconds:",
+      //   maxChargingTime.totalMilliseconds
+      // );
+
+      // //* Charging Session Loop
+      // let timeDifferenceMS = 0;
+      // let currentTime = 0;
+
+      // while (
+      //   balance > 0 &&
+      //   timeDifferenceMS < maxChargingTime.totalMilliseconds &&
+      //   stop_clicked != 1
+      // ) {
+      //   await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      //   console.log("startTime", startTime);
+      //   currentTime = Date.now();
+
+      //   timeDifferenceMS = Math.round(currentTime - startTime);
+
+      //   console.log("Current Time:", currentTime);
+      //   console.log("Start Time:", startTime);
+      //   console.log("timeDifferenceMS:", timeDifferenceMS);
+      //   console.log("maxChargingTime:", maxChargingTime.totalMilliseconds);
+      // } //* WHILE LOOP
+    } else if (stop_clicked == 1) {
+      res.json({ stop: 1 });
     }
-    stop_clicked = 0;
   } catch (err) {
     console.error("Error:", err.message);
     res.status(500).json({ error: "Internal server error" });
@@ -340,7 +535,8 @@ router.post("/stop_session", async (req, res) => {
 
   try {
     stop_clicked = 1;
-    send_to_IoThub(0);
+    console.log("stop");
+    send_to_IoThub(0, 0, 0);
 
     const pool = await poolPromise;
     var currentdate = new Date();
@@ -358,15 +554,30 @@ router.post("/stop_session", async (req, res) => {
       currentdate.getSeconds();
     console.log("datetime", datetime);
 
-    let result1 = await pool.request().query(`
-            UPDATE Charging_sessions 
-            SET end_time = '${datetime}', status = 0
-            WHERE  client_id = ${req.session.userId} AND status = 1
-        `);
+    await waitForData();
 
     const result = await pool.request()
       .query`SELECT account_balance FROM clients WHERE client_id = ${req.session.userId}`;
+    console.log(`Energy: ${energy}, balance: ${Balance}`);
     balance = result.recordset[0].account_balance;
+    cost = (balance - Balance).toFixed(2);
+    console.log(`Energy: ${energy}, balance: ${Balance}`);
+    let result12 = await pool.request().query(`
+                UPDATE Charging_stations 
+                SET availability = 'Available'
+                WHERE station_id = ${station_id} `);
+
+    result6 = await pool.request().query(`
+                UPDATE Clients
+                SET account_balance = ${Balance}
+                WHERE client_id = ${req.session.userId}
+            `);
+    let result1 = await pool.request().query(`
+            UPDATE Charging_sessions 
+            SET end_time = '${datetime}', Status = 0, Cost=${cost}, energy_consumed=${energy}
+            WHERE  client_id = ${req.session.userId} AND Status = 1
+        `);
+    stop_clicked = 0;
     if (result.recordset.length > 0) {
       res.json({ account_balance: balance });
     } else {

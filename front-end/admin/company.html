@@ -125,7 +125,7 @@
         <form
           id="stationForm"
           action="http://localhost:3000/add-admin-company"
-          method="POST"
+          method="POST" enctype="multipart/form-data"
         >
           <input type="hidden" name="role" value="admin" />
 
@@ -201,7 +201,9 @@
               value=""
             />
           </div>
-
+          <div class="input-group mb-3">
+          <input type="file" id="jsonFile" name="jsonFile" accept=".json">
+        </div>
           <div id="rfidContainer1">
             <div class="form-group">
               <label for="RFID">RFID Card:</label>
@@ -333,7 +335,10 @@
             modal.style.display = "block";
             document.getElementById("adminIdInput").value = currentUserId;
           })
-          .catch((error) => console.error("Error fetching RFID tags:", error));
+          .catch(error => {
+            // Display an alert with the error message
+            alert(`Error inserting station: ${error}`);
+        });
       }
 
       document.addEventListener("click", function (event) {
@@ -513,6 +518,35 @@
             deleteRFIDField(event.target.parentNode);
           }
         });
+        function uploadJSON() {
+            const fileInput = document.getElementById('jsonFile');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const jsonData = event.target.result;
+
+                    fetch('/upload-json', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: jsonData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert('File uploaded successfully');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                };
+                reader.readAsText(file);
+            } else {
+                alert('Please select a file');
+            }
+        }
     </script>
   </body>
 </html>

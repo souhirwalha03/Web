@@ -6,13 +6,34 @@
 
     <title>Horizop</title>
     <link rel="stylesheet" href="../styles.css" />
-
+    <style>
+      .button-container {
+      text-align: center; /* Optional: Align buttons in the center */
+    }
+    .button-container button {
+      display: inline-block;
+      margin-right: 10px; /* Optional: Add some space between buttons */
+    }
+    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
       rel="stylesheet"
     />
+    <script
+      src="https://code.jquery.com/jquery-3.4.0.min.js"
+      integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg="
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"></script>
 
+    <style>
+      .flexHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+    </style>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
@@ -116,6 +137,7 @@
               type="submit"
               onclick="logout()"
               style="padding-bottom: 30px"
+              id="logout"
             >
               Log out
             </button>
@@ -182,8 +204,8 @@
           <div id="myModal1" class="modal">
             <!-- Modal content -->
             <div
-              class="modal-content"
-              style="padding: 30px; width: 30%; margin-top: 15%"
+              class="modal-content" id="model_dashboard"
+              style="padding-left: 10px !important; width: 50%; margin-top: 5% ; margin-left: -60px ; padding-bottom: 20px;"
             >
               <div style="border-top: 300px">
                 <p id="status"></p>
@@ -195,17 +217,23 @@
 
                 <div
                   class="class1"
-                  style="padding-left: 120px"
+
                   id="chargingText"
                 ></div>
-
-                <button
-                  id="stop"
-                  class="bn"
-                  type="submit"
-                  style="margin: -10px; left: 100px"
-                >
-                  Stop Charging
+                <div  class="dashboard" >
+                  
+                  <canvas id="iotChart" style="display: none; width: 400px; height: 200px;"></canvas>
+                  <canvas id="energyChart" width="400" height="200"></canvas>
+                </div>
+                <!-- Dashboard Section -->
+                <!-- <div id="dashboard" style="display: none;">
+            <h2>Dashboard</h2>
+            <div id="dataDisplay"></div>
+          </div> -->
+          <div class="button-container">
+            <button id="showIotChart" class="bn" type="submit" >Detailed chart</button>
+            <button id="stop" class="bn" type="submit" >Stop Charging</button>
+          </div>
                 </button>
               </div>
             </div>
@@ -328,7 +356,7 @@
       function startcharging() {
         var modal = document.getElementById("myModal1");
         modal.style.display = "block";
-
+        startWebSocket();
         // Close the modal when the close button is clicked
         document.addEventListener("click", function (event) {
           if (event.target.classList.contains("close")) {
@@ -441,6 +469,262 @@
           sidebar.classList.remove("hidden");
         });
       });
+
+
+      $(document).ready(() => {
+    const socket = new WebSocket("ws://localhost:3001");
+    socket.onopen = () => {
+        console.log("WebSocket connection established.");
+    };
+
+    socket.onclose = () => {
+        console.log("WebSocket connection closed.");
+    };
+
+    socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+    };
+
+    class DeviceData {
+        constructor(deviceId) {
+            this.deviceId = deviceId;
+            this.maxLen = 50;
+            this.timeData = new Array(this.maxLen);
+            this.CurrentData = new Array(this.maxLen);
+            this.VoltageData = new Array(this.maxLen);
+        }
+
+        addData(time, Current, Voltage) {
+            this.timeData.push(time);
+            this.CurrentData.push(Current);
+            this.VoltageData.push(Voltage || null);
+
+            if (this.timeData.length > this.maxLen) {
+                this.timeData.shift();
+                this.CurrentData.shift();
+                this.VoltageData.shift();
+            }
+        }
+    }
+
+    class EnergyData {
+        constructor(deviceId) {
+            this.deviceId = deviceId;
+            this.maxLen = 50;
+            this.timeData = new Array(this.maxLen);
+            this.energyData = new Array(this.maxLen);
+        }
+
+        addData(time, energy) {
+            this.timeData.push(time);
+            this.energyData.push(energy);
+
+            if (this.timeData.length > this.maxLen) {
+                this.timeData.shift();
+                this.energyData.shift();
+            }
+        }
+    }
+
+    class TrackedDevices {
+        constructor() {
+            this.devices = [];
+            this.energyDevices = [];
+        }
+
+        findDevice(deviceId) {
+            return this.devices.find((device) => device.deviceId === deviceId);
+        }
+
+        findEnergyDevice(deviceId) {
+            return this.energyDevices.find((device) => device.deviceId === deviceId);
+        }
+
+        getDevicesCount() {
+            return this.devices.length;
+        }
+    }
+
+    const trackedDevices = new TrackedDevices();
+
+    const chartData = {
+        datasets: [
+            {
+                fill: false,
+                label: "Current",
+                yAxisID: "Current",
+                borderColor: "rgba(255, 204, 0, 1)",
+                pointBoarderColor: "rgba(255, 204, 0, 1)",
+                backgroundColor: "rgba(255, 204, 0, 0.4)",
+                pointHoverBackgroundColor: "rgba(255, 204, 0, 1)",
+                pointHoverBorderColor: "rgba(255, 204, 0, 1)",
+                spanGaps: true,
+            },
+            {
+                fill: false,
+                label: "Voltage",
+                yAxisID: "Voltage",
+                borderColor: "rgba(24, 120, 240, 1)",
+                pointBoarderColor: "rgba(24, 120, 240, 1)",
+                backgroundColor: "rgba(24, 120, 240, 0.4)",
+                pointHoverBackgroundColor: "rgba(24, 120, 240, 1)",
+                pointHoverBorderColor: "rgba(24, 120, 240, 1)",
+                spanGaps: true,
+            },
+        ],
+    };
+
+    const chartOptions = {
+        scales: {
+            yAxes: [
+                {
+                    id: "Current",
+                    type: "linear",
+                    scaleLabel: {
+                        labelString: "Current (A)",
+                        display: true,
+                    },
+                    position: "left",
+                    ticks: {
+                        suggestedMin: 0,
+                        suggestedMax: 30,
+                        beginAtZero: true,
+                    },
+                },
+                {
+                    id: "Voltage",
+                    type: "linear",
+                    scaleLabel: {
+                        labelString: "Voltage (V)",
+                        display: true,
+                    },
+                    position: "right",
+                    ticks: {
+                        suggestedMin: 0,
+                        suggestedMax: 220,
+                        beginAtZero: true,
+                    },
+                },
+            ],
+        },
+    };
+
+    const ctx = document.getElementById("iotChart").getContext("2d");
+    const myLineChart = new Chart(ctx, {
+        type: "line",
+        data: chartData,
+        options: chartOptions,
+    });
+
+    const energyChartData = {
+        datasets: [
+            {
+                fill: false,
+                label: "Energy",
+                yAxisID: "Energy",
+                borderColor: "rgba(0, 204, 0, 1)",
+                pointBoarderColor: "rgba(0, 204, 0, 1)",
+                backgroundColor: "rgba(0, 204, 0, 0.4)",
+                pointHoverBackgroundColor: "rgba(0, 204, 0, 1)",
+                pointHoverBorderColor: "rgba(0, 204, 0, 1)",
+                spanGaps: true,
+            },
+        ],
+    };
+
+    const energyChartOptions = {
+        scales: {
+            yAxes: [
+                {
+                    id: "Energy",
+                    type: "linear",
+                    scaleLabel: {
+                        labelString: "Energy (kWh)",
+                        display: true,
+                    },
+                    position: "right",
+                    ticks: {
+                        suggestedMin: 0,
+                        suggestedMax: 0.5,
+                        beginAtZero: true,
+                    },
+                },
+            ],
+        },
+    };
+
+    const ctxEnergy = document.getElementById("energyChart").getContext("2d");
+    const myEnergyChart = new Chart(ctxEnergy, {
+        type: "line",
+        data: energyChartData,
+        options: energyChartOptions,
+    });
+
+    socket.onmessage = function onMessage(message) {
+        try {
+            const messageData = JSON.parse(message.data);
+            console.log(messageData);
+
+            if (
+                !messageData.MessageDate ||
+                (!messageData.IotData.Current && !messageData.IotData.Voltage && !messageData.IotData.energy)
+            ) {
+                return;
+            }
+
+            const existingDeviceData = trackedDevices.findDevice(messageData.DeviceId);
+            const existingEnergyDeviceData = trackedDevices.findEnergyDevice(messageData.DeviceId);
+
+            if (existingDeviceData) {
+                existingDeviceData.addData(
+                    messageData.MessageDate,
+                    messageData.IotData.Current,
+                    messageData.IotData.Voltage
+                );
+            } else {
+                const newDeviceData = new DeviceData(messageData.DeviceId);
+                trackedDevices.devices.push(newDeviceData);
+                newDeviceData.addData(
+                    messageData.MessageDate,
+                    messageData.IotData.Current,
+                    messageData.IotData.Voltage
+                );
+            }
+
+            if (existingEnergyDeviceData) {
+                existingEnergyDeviceData.addData(
+                    messageData.MessageDate,
+                    messageData.IotData.energy
+                );
+            } else {
+                const newEnergyDeviceData = new EnergyData(messageData.DeviceId);
+                trackedDevices.energyDevices.push(newEnergyDeviceData);
+                newEnergyDeviceData.addData(
+                    messageData.MessageDate,
+                    messageData.IotData.energy
+                );
+            }
+
+            // Update charts data
+            myLineChart.data.labels = existingDeviceData.timeData;
+            myLineChart.data.datasets[0].data = existingDeviceData.CurrentData;
+            myLineChart.data.datasets[1].data = existingDeviceData.VoltageData;
+            myLineChart.update();
+
+            myEnergyChart.data.labels = existingEnergyDeviceData.timeData;
+            myEnergyChart.data.datasets[0].data = existingEnergyDeviceData.energyData;
+            myEnergyChart.update();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    $('#showIotChart').click(() => {
+        // Toggle visibility of the charts
+        $('#iotChart').toggle();
+        $('#energyChart').toggle();
+    });
+});
     </script>
   </body>
 </html>
